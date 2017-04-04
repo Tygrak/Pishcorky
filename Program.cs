@@ -8,7 +8,7 @@ using OpenTK.Graphics.OpenGL;
 namespace Pishcorky{
     public class Program{
         public static void Main(string[] args){
-            Game game = new Game(1000, 1000, 50, 50);
+            Game game = new Game(1000, 1000, 30, 30);
             game.canvas.NextFrame(game.Initialize);
         }
     }
@@ -22,14 +22,14 @@ namespace Pishcorky{
         public Board board;
         public AI ai;
         public bool aiEnabled = true;
-        public byte currentColor = 1;
         public byte playerNum = 2;
-        public byte playerColor = 0;
+        public byte playerColor = 1;
         public bool paused = false;
+        public int turn = 0;
 
         public Game(int windowWidth, int windowHeight, byte width, byte height){
             this.canvas = new Canvas(windowWidth, windowHeight);
-            this.squareSize = 100/width;
+            this.squareSize = 100.0f/width;
             this.width = width;
             this.height = height;
             this.board = new Board(width, height, this);
@@ -43,6 +43,7 @@ namespace Pishcorky{
             canvas.ObjectMode();
             canvas.mouseActions.Add(new MouseAction(MouseButton.Left, MouseClick));
             canvas.keyboardInterruptAction = KeyboardInterrupt;
+            GL.LineWidth(3);
             DrawBoard();
         }
 
@@ -72,6 +73,10 @@ namespace Pishcorky{
                 Circle c = new Circle(x*squareSize + squareSize/2, y*squareSize + squareSize/2, 3*squareSize/10);
                 c.color = Colorb.Blue;
                 canvas.Draw(c);
+            } else if(color == 255){
+                CircleUnfilled c = new CircleUnfilled(x*squareSize + squareSize/2, y*squareSize + squareSize/2, squareSize/2);
+                c.color = Colorb.Black;
+                canvas.Draw(c);
             }
         }
 
@@ -83,8 +88,11 @@ namespace Pishcorky{
                     board = new Board(width, height, this);
                     ai = new AI(board, this);
                     paused = false;
+                    turn = 0;
                     DrawBoard();
                 }
+            } else if(canvas.LastPressedChar == ' '){
+                paused = !paused;
             }
         }
 
@@ -92,15 +100,16 @@ namespace Pishcorky{
             double delta = canvas.DeltaTime;
             timer -= delta;
             if(timer<0 && !paused){
-                timer = 0.25f;
-                if(playerColor != currentColor && aiEnabled){
-                    Byte2 move = ai.RandomMove();
-                    if(board.PlaceSquare(move.x, move.y, currentColor)){
-                        currentColor++;
-                        if(currentColor>playerNum){
-                            currentColor = 1;
-                        }
+                timer = 0.5f;
+                if(playerColor != board.currentColor && aiEnabled){
+                    Byte2 move = new Byte2();
+                    if(turn > 4){
+                        if(board.currentColor == 1) move = ai.NextMove(2);
+                        if(board.currentColor == 2) move = ai.NextMove(4);
+                    } else{
+                        move = ai.RandomMove();
                     }
+                    board.PlaceSquare(move.x, move.y, board.currentColor);
                 }
             }
         }
@@ -110,16 +119,15 @@ namespace Pishcorky{
             Vector2d pos = canvas.ScreenToWorldPosition(mousePos);
             byte x = (byte) Math.Floor(pos.X/squareSize);
             byte y = (byte) Math.Floor(pos.Y/squareSize);
-            Console.WriteLine(x + ", " + y + " : " + board.GetSquare(x, y));
-            if(paused || playerColor != currentColor && aiEnabled || x<0 || x>=width || y<0 || y>=height){
+            if(x >= width || y >= height){
                 return;
             }
-            if(board.PlaceSquare(x, y, currentColor)){
-                currentColor++;
-                if(currentColor>playerNum){
-                    currentColor = 1;
-                }
+            Console.WriteLine(x + ", " + y + " : " + board.GetSquare(x, y));
+            if(paused || playerColor != board.currentColor && aiEnabled){
+                return;
             }
+            board.PlaceSquare(x, y, board.currentColor);
+            Console.WriteLine("Score: " + ai.ScoreBoard(board));
         }
     }
 }

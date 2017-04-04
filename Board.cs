@@ -8,7 +8,8 @@ namespace Pishcorky{
         private byte width;
         private byte height;
         private byte[,] map;
-        private byte toWin = 5;
+        public byte currentColor = 1;
+        public byte toWin = 5;
         public byte colorWon = 0;
 
         public Board(byte width, byte height, Game game){
@@ -21,6 +22,7 @@ namespace Pishcorky{
         public Board(Board b){
             this.width = b.width;
             this.height = b.height;
+            this.currentColor = b.currentColor;
             this.map = (byte[,]) b.map.Clone();
         }
 
@@ -43,8 +45,29 @@ namespace Pishcorky{
             map[x, y] = color;
             game.DrawSquare(x, y, color);
             EndTurn(x, y);
-            if(game != null && WinCheck()){
-                game.paused = true;
+            currentColor++;
+            if(currentColor>2){
+                currentColor = 1;
+            }
+            if(game != null){
+                game.turn++;
+                if(WinCheck()){
+                    game.DrawSquare(x, y, 255);
+                    game.paused = true;
+                }
+            }
+            return true;
+        }
+
+        public bool QuietPlaceSquare(byte x, byte y, byte color){
+            if(map[x, y] != 0){
+                return false;
+            }
+            map[x, y] = color;
+            EndTurn(x, y);
+            currentColor++;
+            if(currentColor>2){
+                currentColor = 1;
             }
             return true;
         }
@@ -54,13 +77,13 @@ namespace Pishcorky{
             byte xPos;
             byte yPos = y;
             byte inRow = 0;
-            for (xPos = x; xPos < width && yPos < height; xPos++){
+            for (xPos = x; xPos+1 < width && yPos+1 < height; xPos++){
                 if(map[xPos+1, yPos+1] != c){
                     break;
                 }
                 yPos++;
             }
-            for (; xPos >= 0 && yPos >= 0; xPos--){
+            for (; xPos >= 0 && yPos >= 0 && xPos != 255 && yPos != 255; xPos--){
                 if(map[xPos, yPos] == c){
                     inRow++;
                     if(inRow == toWin){
@@ -74,13 +97,13 @@ namespace Pishcorky{
             }
             yPos = y;
             inRow = 0;
-            for (xPos = x; yPos < height && xPos >= 0; xPos--){
+            for (xPos = x; yPos+1 < height && xPos-1 >= 0 && xPos != 255; xPos--){
                 if(map[xPos-1, yPos+1] != c){
                     break;
                 }
                 yPos++;
             }
-            for (; xPos < width && yPos >= 0; xPos++){
+            for (; xPos < width && yPos >= 0 && yPos != 255; xPos++){
                 if(map[xPos, yPos] == c){
                     inRow++;
                     if(inRow == toWin){
@@ -94,12 +117,12 @@ namespace Pishcorky{
             }
             yPos = y;
             inRow = 0;
-            for (xPos = x; xPos < width; xPos++){
+            for (xPos = x; xPos+1 < width; xPos++){
                 if(map[xPos+1, yPos] != c){
                     break;
                 }
             }
-            for (; xPos >= 0; xPos--){
+            for (; xPos >= 0 && xPos != 255; xPos--){
                 if(map[xPos, yPos] == c){
                     inRow++;
                     if(inRow == toWin){
@@ -112,12 +135,12 @@ namespace Pishcorky{
             }
             xPos = x;
             inRow = 0;
-            for (yPos = y; yPos < width; yPos++){
+            for (yPos = y; yPos+1 < width; yPos++){
                 if(map[xPos, yPos+1] != c){
                     break;
                 }
             }
-            for (; yPos >= 0; yPos--){
+            for (; yPos >= 0 && yPos != 255; yPos--){
                 if(map[xPos, yPos] == c){
                     inRow++;
                     if(inRow == toWin){
@@ -156,6 +179,18 @@ namespace Pishcorky{
             if(y+1 < height && map[x, y+1] != 0) return true;
             if(y-1 >= 0 && map[x, y-1] != 0) return true;
             return false;
+        }
+
+        public List<Byte2> FilledSquares(){
+            List<Byte2> squares = new List<Byte2>();
+            for (byte x = 0; x < width; x++){
+                for (byte y = 0; y < height; y++){
+                    if(map[x, y] != 0){
+                        squares.Add(new Byte2(x, y));
+                    }
+                }
+            }
+            return squares;
         }
 
         public Byte2[] InterestingMoves(){

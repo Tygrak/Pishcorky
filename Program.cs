@@ -21,11 +21,14 @@ namespace Pishcorky{
         public byte height;
         public Board board;
         public AI ai;
+        public bool replayMode = false;
         public bool aiEnabled = true;
         public byte playerNum = 2;
         public byte playerColor = 1;
         public bool paused = false;
         public int turn = 0;
+        public int replayPos = -1;
+        public string replay = "15,15|16,16|15,17|17,17|14,16|13,17|16,18|13,15|16,14|12,16|17,13|18,12|17,19|18,20|11,15|11,17|10,18|12,17|10,17|10,16|9,16|9,15|8,14|11,18|8,15|10,19|9,20|7,14|12,18|13,18|11,16|13,16|6,13|13,14|o";
 
         public Game(int windowWidth, int windowHeight, byte width, byte height){
             this.canvas = new Canvas(windowWidth, windowHeight);
@@ -84,33 +87,70 @@ namespace Pishcorky{
             if(canvas.LastPressedChar == 'r'){
                 if(paused){
                     Console.WriteLine("Restarting.");
-                    canvas.ClearObjects();
-                    board = new Board(width, height, this);
-                    ai = new AI(board, this);
-                    paused = false;
-                    turn = 0;
-                    DrawBoard();
+                    Restart();
+                    replay = "";
                 }
             } else if(canvas.LastPressedChar == ' '){
-                paused = !paused;
+                if(replayMode){
+                    Console.WriteLine((replayPos+2) + ", " + replay.Length);
+                    if(replayPos+2>=replay.Length){
+                        Console.WriteLine("End of replay.");
+                        return;
+                    }
+                    int nextPos = replay.IndexOf('|', replayPos+1);
+                    string next = replay.Substring(replayPos+1, nextPos - replayPos - 1);
+                    replayPos = nextPos;
+                    string x = next.Split(new string[]{","}, StringSplitOptions.None)[0];
+                    string y = next.Split(new string[]{","}, StringSplitOptions.None)[1];
+                    board.PlaceSquare(byte.Parse(x), byte.Parse(y), board.currentColor);
+                    Console.WriteLine(x + ", " + y + " : " + nextPos);
+                } else{
+                    paused = !paused;
+                }
+            } else if(canvas.LastPressedChar == 'm'){
+                replayMode = !replayMode;
+            } else if(canvas.LastPressedChar == 'b'){
+                if(replayMode){
+                    //TODO: Implement backwards movement in replay mode.
+                    /*int endPos = replayPos;
+                    Restart();
+                    while(replayPos != endPos){
+                        int nextPos = replay.IndexOf('|', replayPos+1);
+                        string next = replay.Substring(replayPos+1, nextPos - replayPos - 1);
+                        replayPos = nextPos;
+                        string x = next.Split(new string[]{","}, StringSplitOptions.None)[0];
+                        string y = next.Split(new string[]{","}, StringSplitOptions.None)[1];
+                        board.PlaceSquare(byte.Parse(x), byte.Parse(y), board.currentColor);
+                    }*/
+                }
             }
+        }
+
+        public void Restart(){
+            canvas.ClearObjects();
+            board = new Board(width, height, this);
+            ai = new AI(board, this);
+            paused = false;
+            turn = 0;
+            replayPos = 0;
+            DrawBoard();
         }
 
         public void Update(){
             double delta = canvas.DeltaTime;
             timer -= delta;
-            if(timer<0 && !paused){
-                timer = 0.5f;
+            if(timer<0 && !paused && !replayMode){
                 if(playerColor != board.currentColor && aiEnabled){
-                    Byte2 move = new Byte2();
-                    if(turn > 4){
-                        if(board.currentColor == 1) move = ai.NextMove(2);
+                    KeyValuePair<byte, byte> move = new KeyValuePair<byte, byte>();
+                    if(turn > 3){
+                        if(board.currentColor == 1) move = ai.NextMove(4);
                         if(board.currentColor == 2) move = ai.NextMove(4);
                     } else{
                         move = ai.RandomMove();
                     }
-                    board.PlaceSquare(move.x, move.y, board.currentColor);
+                    board.PlaceSquare(move.Key, move.Value, board.currentColor);
                 }
+                timer = 0.5f;
             }
         }
 
@@ -123,7 +163,7 @@ namespace Pishcorky{
                 return;
             }
             Console.WriteLine(x + ", " + y + " : " + board.GetSquare(x, y));
-            if(paused || playerColor != board.currentColor && aiEnabled){
+            if(paused || replayMode || playerColor != board.currentColor && aiEnabled){
                 return;
             }
             board.PlaceSquare(x, y, board.currentColor);

@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Collections.Generic;
 using SharpCanvas;
 
@@ -60,6 +61,8 @@ namespace Pishcorky{
         }
 
         public KeyValuePair<byte, byte> NextMove(byte depth){
+            Stopwatch s = new Stopwatch();
+            s.Start();
             leaves = 0;
             depth--;
             KeyValuePair<byte, byte>[] moves = board.InterestingMoves();
@@ -86,6 +89,8 @@ namespace Pishcorky{
             return moves[bestMoveId];*/
             Console.WriteLine("Best Move: " + bestMove.Value.Key + ", " + bestMove.Value.Value + " value: " + bestMove.Key);
             Console.WriteLine("Leaves: " + leaves);
+            s.Stop();
+            Console.WriteLine("Took: " + s.Elapsed.TotalMilliseconds + "ms");
             return bestMove.Value;
         }
 
@@ -113,7 +118,12 @@ namespace Pishcorky{
         public KeyValuePair<int, KeyValuePair<byte, byte>> RootAlphaBeta(int alpha, int beta, Board b, int depth){
             leaves++;
             Board bCopy = b;
-            KeyValuePair<byte, byte>[] moves = bCopy.InterestingMoves();
+            KeyValuePair<byte, byte>[] moves;
+            if(depth < 3){
+                moves = bCopy.InterestingMoves();
+            } else{
+                moves = RootMovesSort(bCopy);
+            }
             int bestId = 0;
             for(int i = 0; i < moves.Length; i++){
                 bCopy = b.QuickCopy();
@@ -123,6 +133,39 @@ namespace Pishcorky{
                 if(score > alpha){alpha = score; bestId = i;}
             }
             return new KeyValuePair<int, KeyValuePair<byte, byte>>(alpha, new KeyValuePair<byte, byte>(moves[bestId].Key, moves[bestId].Value));
+        }
+
+        public KeyValuePair<byte, byte>[] RootMovesSort(Board b){
+            int alpha = int.MinValue;
+            int beta = int.MaxValue;
+            leaves++;
+            Board bCopy = b;
+            KeyValuePair<byte, byte>[] moves = bCopy.InterestingMoves();
+            List<int> movesValues = new List<int>(moves.Length);
+            List<KeyValuePair<byte, byte>> movesSorted = new List<KeyValuePair<byte, byte>>(moves.Length);
+            bCopy = b.QuickCopy();
+            bCopy.QuietPlaceSquare(moves[0].Key, moves[0].Value, bCopy.currentColor);
+            int score = -AlphaBeta(-beta, -alpha, bCopy, 1);
+            movesValues.Add(score);
+            movesSorted.Add(moves[0]);
+            for(int i = 1; i < moves.Length; i++){
+                bCopy = b.QuickCopy();
+                bCopy.QuietPlaceSquare(moves[i].Key, moves[i].Value, bCopy.currentColor);
+                score = -AlphaBeta(-beta, -alpha, bCopy, 1);
+                for(int j = -1; j < movesValues.Count; j++){
+                    if(j == movesValues.Count-1){
+                        movesValues.Add(score);
+                        movesSorted.Add(moves[i]);
+                        break;
+                    } else if(movesValues[j+1]>score){
+                        movesValues.Insert(j+1, score);
+                        movesSorted.Insert(j+1, moves[i]);
+                        break;
+                    }
+                }
+            }
+            movesSorted.Reverse();
+            return movesSorted.ToArray();
         }
 
         public int NegaMax(Board b, int depth){

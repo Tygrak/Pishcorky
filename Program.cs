@@ -24,11 +24,11 @@ namespace Pishcorky{
         public bool replayMode = false;
         public bool aiEnabled = true;
         public byte playerNum = 2;
-        public byte playerColor = 1;
+        public byte playerColor = 2;
         public bool paused = false;
         public int turn = 0;
         public int replayPos = -1;
-        public string replay = "15,15|16,16|15,17|17,17|14,16|13,17|16,18|13,15|16,14|12,16|17,13|18,12|17,19|18,20|11,15|11,17|10,18|12,17|10,17|10,16|9,16|9,15|8,14|11,18|8,15|10,19|9,20|7,14|12,18|13,18|11,16|13,16|6,13|13,14|o";
+        public string replay = "14,16|15,15|15,17|16,14|16,16|17,15|16,18|17,19|13,15|12,14|14,18|16,15|13,19|12,20|18,15|18,16|15,13|19,17|20,18|18,18|16,20|20,16|21,15|19,16|17,16|22,16|21,16|16,17|13,17|15,19|13,16|23,17|15,16|x";
 
         public Game(int windowWidth, int windowHeight, byte width, byte height){
             this.canvas = new Canvas(windowWidth, windowHeight);
@@ -48,6 +48,7 @@ namespace Pishcorky{
             canvas.keyboardInterruptAction = KeyboardInterrupt;
             GL.LineWidth(3);
             DrawBoard();
+            if(!replayMode) replay = "";
         }
 
         public void DrawBoard(){
@@ -103,7 +104,7 @@ namespace Pishcorky{
                     string x = next.Split(new string[]{","}, StringSplitOptions.None)[0];
                     string y = next.Split(new string[]{","}, StringSplitOptions.None)[1];
                     board.PlaceSquare(byte.Parse(x), byte.Parse(y), board.currentColor);
-                    Console.WriteLine(x + ", " + y + " : " + nextPos);
+                    //Console.WriteLine(x + ", " + y + " : " + nextPos);
                 } else{
                     paused = !paused;
                 }

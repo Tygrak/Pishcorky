@@ -189,24 +189,24 @@ namespace Pishcorky{
             return false;
         }
 
-        public List<KeyValuePair<byte, byte>> FilledSquares(){
-            List<KeyValuePair<byte, byte>> squares = new List<KeyValuePair<byte, byte>>();
+        public List<short> FilledSquares(){
+            List<short> squares = new List<short>();
             for (byte x = 0; x < width; x++){
                 for (byte y = 0; y < height; y++){
                     if(map[x + width * y] != 0){
-                        squares.Add(new KeyValuePair<byte, byte>(x, y));
+                        squares.Add((short)(x+width*y));
                     }
                 }
             }
             return squares;
         }
 
-        public KeyValuePair<byte, byte>[] InterestingMoves(){
-            List<KeyValuePair<byte, byte>> moves = new List<KeyValuePair<byte, byte>>();
+        public short[] InterestingMoves(){
+            List<short> moves = new List<short>();
             for (byte x = 0; x < width; x++){
                 for (byte y = 0; y < height; y++){
                     if(NeighborsFilled(x, y)){
-                        moves.Add(new KeyValuePair<byte, byte>(x, y));
+                        moves.Add((short)(x+width*y));
                     }
                 }
             }

@@ -26,68 +26,25 @@ namespace Pishcorky{
             this.rand = new Random();
         }
 
-        public KeyValuePair<byte, byte> RandomMove(){
-            KeyValuePair<byte, byte>[] moves = board.InterestingMoves();
+        public short RandomMove(){
+            short[] moves = board.InterestingMoves();
             if(moves.Length == 0){
-                return new KeyValuePair<byte, byte>((byte) (width/2), (byte) (height/2));
+                return (short)(width/2 + width * height/2);
             }
             return moves[rand.Next(0, moves.Length)];
         }
 
-        public KeyValuePair<byte, byte> GreedyNextMove(){
-            KeyValuePair<byte, byte>[] moves = board.InterestingMoves();
-            if(moves.Length == 0){
-                return new KeyValuePair<byte, byte>((byte) (width/2), (byte) (height/2));
-            }
-            Board bCopy = board.QuickCopy();
-            int bestMoveId = 0;
-            bCopy.QuietPlaceSquare(moves[0].Key, moves[0].Value, bCopy.currentColor);
-            int bestMoveValue = ScoreBoard(bCopy);
-            for(int i = 1; i < moves.Length; i++){
-                bCopy = board.QuickCopy();
-                bCopy.QuietPlaceSquare(moves[i].Key, moves[i].Value, bCopy.currentColor);
-                int val = ScoreBoard(bCopy);
-                Console.WriteLine(moves[i].Key + ", " + moves[i].Value + " : " + val);
-                if(board.currentColor == 1 && val > bestMoveValue){
-                    bestMoveId = i;
-                    bestMoveValue = val;
-                } else if(board.currentColor == 2 && val < bestMoveValue){
-                    bestMoveId = i;
-                    bestMoveValue = val;
-                }
-            }
-            Console.WriteLine("Best Move: " + moves[bestMoveId].Key + ", " + moves[bestMoveId].Value + " value: " + bestMoveValue);
-            return moves[bestMoveId];
-        }
-
-        public KeyValuePair<byte, byte> NextMove(byte depth){
+        public short NextMove(byte depth){
             Stopwatch s = new Stopwatch();
             s.Start();
             leaves = 0;
             depth--;
-            KeyValuePair<byte, byte>[] moves = board.InterestingMoves();
+            short[] moves = board.InterestingMoves();
             if(moves.Length == 0){
-                return new KeyValuePair<byte, byte>((byte) (width/2), (byte) (height/2));
+                return (short)(width/2 + width * height/2);
             }
-            KeyValuePair<int, KeyValuePair<byte, byte>> bestMove = RootAlphaBeta(int.MinValue, int.MaxValue, board, depth+1);
-            /*Board bCopy = board.QuickCopy();
-            int bestMoveId = 0;
-            bCopy.QuietPlaceSquare(moves[0].Key, moves[0].Value, bCopy.currentColor);
-            int bestMoveValue = AlphaBeta(int.MinValue, int.MaxValue, bCopy, depth);
-            for(int i = 1; i < moves.Length; i++){
-                bCopy = board.QuickCopy();
-                bCopy.QuietPlaceSquare(moves[i].Key, moves[i].Value, bCopy.currentColor);
-                int val = AlphaBeta(int.MinValue, int.MaxValue, bCopy, depth);
-                Console.WriteLine(moves[i].Key + ", " + moves[i].Value + " : " + val);
-                if(val < bestMoveValue){
-                    bestMoveId = i;
-                    bestMoveValue = val;
-                }
-            }
-            Console.WriteLine("Best Move: " + moves[bestMoveId].Key + ", " + moves[bestMoveId].Value + " value: " + bestMoveValue);
-            Console.WriteLine("Leaves: " + leaves);
-            return moves[bestMoveId];*/
-            Console.WriteLine("Best Move: " + bestMove.Value.Key + ", " + bestMove.Value.Value + " value: " + bestMove.Key);
+            KeyValuePair<int, short> bestMove = RootAlphaBeta(int.MinValue, int.MaxValue, board, depth+1);
+            Console.WriteLine("Best Move: " + bestMove.Value % width + ", " + bestMove.Value / width + " value: " + bestMove.Key);
             Console.WriteLine("Leaves: " + leaves);
             s.Stop();
             Console.WriteLine("Took: " + s.Elapsed.TotalMilliseconds + "ms");
@@ -98,10 +55,10 @@ namespace Pishcorky{
             leaves++;
             Board bCopy = b;
             if(depth == 0) return RelativeScoreBoard(bCopy);
-            KeyValuePair<byte, byte>[] moves = bCopy.InterestingMoves();
+            short[] moves = bCopy.InterestingMoves();
             for(int i = 0; i < moves.Length; i++){
                 bCopy = b.QuickCopy();
-                bCopy.QuietPlaceSquare(moves[i].Key, moves[i].Value, bCopy.currentColor);
+                bCopy.QuietPlaceSquare((byte) (moves[i] % width), (byte) (moves[i] / width), bCopy.currentColor);
                 if(bCopy.colorWon == board.currentColor){
                     return 10000+depth;
                 } else if(bCopy.colorWon != board.currentColor && b.colorWon != 0){
@@ -115,10 +72,10 @@ namespace Pishcorky{
             return alpha;
         }
 
-        public KeyValuePair<int, KeyValuePair<byte, byte>> RootAlphaBeta(int alpha, int beta, Board b, int depth){
+        public KeyValuePair<int, short> RootAlphaBeta(int alpha, int beta, Board b, int depth){
             leaves++;
             Board bCopy = b;
-            KeyValuePair<byte, byte>[] moves;
+            short[] moves;
             if(depth < 3){
                 moves = bCopy.InterestingMoves();
             } else{
@@ -127,30 +84,30 @@ namespace Pishcorky{
             int bestId = 0;
             for(int i = 0; i < moves.Length; i++){
                 bCopy = b.QuickCopy();
-                bCopy.QuietPlaceSquare(moves[i].Key, moves[i].Value, bCopy.currentColor);
+                bCopy.QuietPlaceSquare((byte) (moves[i] % width), (byte) (moves[i] / width), bCopy.currentColor);
                 int score = -AlphaBeta(-beta, -alpha, bCopy, depth-1);
                 //Console.WriteLine(moves[i].Key + ", " + moves[i].Value + " : " + score);
                 if(score > alpha){alpha = score; bestId = i;}
             }
-            return new KeyValuePair<int, KeyValuePair<byte, byte>>(alpha, new KeyValuePair<byte, byte>(moves[bestId].Key, moves[bestId].Value));
+            return new KeyValuePair<int, short>(alpha, moves[bestId]);
         }
 
-        public KeyValuePair<byte, byte>[] RootMovesSort(Board b){
+        public short[] RootMovesSort(Board b){
             int alpha = int.MinValue;
             int beta = int.MaxValue;
             leaves++;
             Board bCopy = b;
-            KeyValuePair<byte, byte>[] moves = bCopy.InterestingMoves();
+            short[] moves = bCopy.InterestingMoves();
             List<int> movesValues = new List<int>(moves.Length);
-            List<KeyValuePair<byte, byte>> movesSorted = new List<KeyValuePair<byte, byte>>(moves.Length);
+            List<short> movesSorted = new List<short>(moves.Length);
             bCopy = b.QuickCopy();
-            bCopy.QuietPlaceSquare(moves[0].Key, moves[0].Value, bCopy.currentColor);
+            bCopy.QuietPlaceSquare((byte) (moves[0] % width), (byte) (moves[0] / width), bCopy.currentColor);
             int score = -AlphaBeta(-beta, -alpha, bCopy, 1);
             movesValues.Add(score);
             movesSorted.Add(moves[0]);
             for(int i = 1; i < moves.Length; i++){
                 bCopy = b.QuickCopy();
-                bCopy.QuietPlaceSquare(moves[i].Key, moves[i].Value, bCopy.currentColor);
+                bCopy.QuietPlaceSquare((byte) (moves[i] % width), (byte) (moves[i] / width), bCopy.currentColor);
                 score = -AlphaBeta(-beta, -alpha, bCopy, 1);
                 for(int j = -1; j < movesValues.Count; j++){
                     if(j == movesValues.Count-1){
@@ -168,27 +125,6 @@ namespace Pishcorky{
             return movesSorted.ToArray();
         }
 
-        public int NegaMax(Board b, int depth){
-            Board bCopy = b;
-            if(depth == 0) return RelativeScoreBoard(bCopy);
-            int max = int.MinValue;
-            int score = int.MinValue;
-            KeyValuePair<byte, byte>[] moves = bCopy.InterestingMoves();
-            for(int i = 0; i < moves.Length; i++){
-                bCopy = b.QuickCopy();
-                bCopy.QuietPlaceSquare(moves[i].Key, moves[i].Value, bCopy.currentColor);
-                if(bCopy.colorWon == board.currentColor){
-                    return 10000;
-                } else if(bCopy.colorWon != board.currentColor && b.colorWon != 0){
-                    return -10000;
-                }
-                score = -NegaMax(bCopy, depth-1);
-                //Console.WriteLine("m: " + moves[i].x + ", " + moves[i].y + " : " + score);
-                if(score > max) max = score;
-            }
-            return max;
-        }
-
         public short ScoreBoard(Board b){
             score = 0;
             map = b.GetMap();
@@ -199,16 +135,14 @@ namespace Pishcorky{
                 score = -10000;
                 return score;
             }
-            List<KeyValuePair<byte, byte>> squares = b.FilledSquares();
+            List<short> squares = b.FilledSquares();
             for (int i = 0; i < squares.Count; i++){
-                byte color = map[squares[i].Key + width*squares[i].Value];
-                byte xPos = squares[i].Key;
-                byte yPos = squares[i].Value;
-                int row = InRow(xPos, yPos, 1, 1, squares);
+                byte color = map[squares[i]];
+                int row = InRow(squares[i], 1, 1, squares);
                 score += row > 1 ? color == 1 ? (short)(row-1) : (short)(-row+1) : (short) 0;
-                row = InRow(xPos, yPos, 1, 0, squares);
+                row = InRow(squares[i], 1, 0, squares);
                 score += row > 1 ? color == 1 ? (short)(row-1) : (short)(-row+1) : (short) 0;
-                row = InRow(xPos, yPos, 1, -1, squares);
+                row = InRow(squares[i], 1, -1, squares);
                 score += row > 1 ? color == 1 ? (short)(row-1) : (short)(-row+1) : (short) 0;
             }
             return score;
@@ -224,55 +158,49 @@ namespace Pishcorky{
                 score = -10000;
                 return score;
             }
-            List<KeyValuePair<byte, byte>> squares = b.FilledSquares();
+            List<short> squares = b.FilledSquares();
             for (int i = 0; i < squares.Count; i++){
-                byte color = map[squares[i].Key + width*squares[i].Value];
-                byte xPos = squares[i].Key;
-                byte yPos = squares[i].Value;
-                int row = InRow(xPos, yPos, 1, 1, squares);
+                byte color = map[squares[i]];
+                int row = InRow(squares[i], 1, 1, squares);
                 score += row > 1 ? color == board.currentColor ? (short)(row-1) : (short)(-row+1) : (short) 0;
-                row = InRow(xPos, yPos, 1, 0, squares);
+                row = InRow(squares[i], 1, 0, squares);
                 score += row > 1 ? color == board.currentColor ? (short)(row-1) : (short)(-row+1) : (short) 0;
-                row = InRow(xPos, yPos, 1, -1, squares);
+                row = InRow(squares[i], 1, -1, squares);
                 score += row > 1 ? color == board.currentColor ? (short)(row-1) : (short)(-row+1) : (short) 0;
             }
             return score;
         }
 
-        public int InRow(byte x, byte y, int rayX, int rayY, List<KeyValuePair<byte, byte>> squares){
-            KeyValuePair<byte, byte> square = squares.Find(t => t.Key == x && t.Value == y);
+        public int InRow(short pos, short rayX, short rayY, List<short> squares){
+            short square = squares.Find(t => pos == t);
             if(square.Equals(null)){
                 return 0;
             }
-            byte color = map[square.Key + width*square.Value];
-            byte xPos = square.Key;
-            byte yPos = square.Value;
+            byte color = map[square];
+            short cPos = pos;
             int inRow = 1;
             int blocks = 0;
-            while(xPos+1 < width && yPos+1 < height && xPos-1 >= 0 && yPos-1 >= 0 && xPos != 255 && yPos != 255){
-                int id = squares.IndexOf(new KeyValuePair<byte, byte>((byte) (xPos + rayX), (byte) (yPos + rayY)));
+            while(cPos >= 0 && cPos < map.Length){
+                int id = squares.IndexOf(cPos);
                 if(id == -1){
                     break;
-                } else if(map[squares[id].Key + width*squares[id].Value] != color){
+                } else if(map[squares[id]] != color){
                     blocks++;
                     break;
                 }
-                xPos = (byte) (xPos + rayX);
-                yPos = (byte) (yPos + rayY);
+                cPos += (short) (rayX + rayY*width);
             }
-            xPos = (byte) (xPos - rayX);
-            yPos = (byte) (yPos - rayY);
-            while(xPos+1 < width && yPos+1 < height && xPos-1 >= 0 && yPos-1 >= 0 && xPos != 255 && yPos != 255){
-                int id = squares.IndexOf(new KeyValuePair<byte, byte>(xPos, yPos));
+            cPos += (short) (-rayX - rayY*width);
+            while(cPos >= 0 && cPos < map.Length){
+                int id = squares.IndexOf(cPos);
                 if(id == -1){
                     break;
-                } else if(map[squares[id].Key + width*squares[id].Value] != color){
+                } else if(map[squares[id]] != color){
                     blocks++;
                     break;
                 }
                 inRow++;
-                xPos = (byte) (xPos - rayX);
-                yPos = (byte) (yPos - rayY);
+                cPos += (short) (-rayX - rayY*width);
             }
             if(blocks == 2 || inRow == 1 || inRow == 0){
                 return 0;

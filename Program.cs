@@ -21,14 +21,15 @@ namespace Pishcorky{
         public byte height;
         public Board board;
         public AI ai;
+        public int randomStartTurns = 4;
         public bool replayMode = false;
         public bool aiEnabled = true;
         public byte playerNum = 2;
-        public byte playerColor = 2;
+        public byte playerColor = 1;
         public bool paused = false;
         public int turn = 0;
         public int replayPos = -1;
-        public string replay = "14,16|15,15|15,17|16,14|16,16|17,15|16,18|17,19|13,15|12,14|14,18|16,15|13,19|12,20|18,15|18,16|15,13|19,17|20,18|18,18|16,20|20,16|21,15|19,16|17,16|22,16|21,16|16,17|13,17|15,19|13,16|23,17|15,16|x";
+        public string replay = "14,14|13,15|15,15|13,16|16,16|17,17|13,13|12,12|12,14|12,15|11,15|14,12|13,12|11,14|14,17|11,16|10,13|12,16|14,16|10,16|9,16|14,15|13,17|16,14|12,18|11,19|11,18|15,13|17,15|13,11|12,10|15,17|14,19|13,14|14,18|14,20|13,18|18,18|15,18|x";
 
         public Game(int windowWidth, int windowHeight, byte width, byte height){
             this.canvas = new Canvas(windowWidth, windowHeight);
@@ -142,14 +143,14 @@ namespace Pishcorky{
             timer -= delta;
             if(timer<0 && !paused && !replayMode){
                 if(playerColor != board.currentColor && aiEnabled){
-                    KeyValuePair<byte, byte> move = new KeyValuePair<byte, byte>();
-                    if(turn > 3){
-                        if(board.currentColor == 1) move = ai.NextMove(4);
+                    short move = 0;
+                    if(turn > randomStartTurns-1){
+                        if(board.currentColor == 1) move = ai.NextMove(2);
                         if(board.currentColor == 2) move = ai.NextMove(4);
                     } else{
                         move = ai.RandomMove();
                     }
-                    board.PlaceSquare(move.Key, move.Value, board.currentColor);
+                    board.PlaceSquare((byte) (move % width), (byte) (move / width), board.currentColor);
                 }
                 timer = 0.5f;
             }
